@@ -1,0 +1,47 @@
+/* $Id$*/
+
+* {
+    color: green;
+}
+
+body {
+    font-family: Helvetica, Arial, sans-serif;
+    background-color: black;
+}
+
+h1, h2 {
+    font-family: Times, serif;
+    font-weight: lighter;
+}
+
+a {
+    font-weight: bold;
+    text-decoration: none;
+}
+
+p {
+    padding-left: 5%;
+}
+
+code {
+    padding-left: 5%;
+}
+
+#container {
+    width: 60%;
+    margin-right: auto;
+    margin-left: auto;
+    margin-top: 5%;
+    text-align: left;
+}
+
+#content {   
+    padding-left: 5%;
+}
+
+#footer {
+    margin-top: 5%;
+    border-top: dashed thin green;
+    text-align: center;
+    font-size: 80%;
+}
