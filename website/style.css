@@ -27,6 +27,13 @@ code {
     padding-left: 5%;
 }
 
+blockquote.epigraph {
+    text-align: left;
+    font-family: monospace;
+    font-style: italic;
+    font-weight: lighter;
+}  
+
 #container {
     width: 60%;
     margin-right: auto;
