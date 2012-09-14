@@ -11,7 +11,6 @@ Some of our features and goals:
 - no ELF but instead flat binaries
 - no wide characters and only ASCII
 - no layers and no bloated abstractions 
-- no mouse support
 - no multi-language support only one simple constructed language: toki pona
 - no paging, only dead simple memory management
 - no scheduler, one process per core
