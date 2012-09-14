@@ -24,5 +24,5 @@ Anonymous Subversion access:
 	# svn co svn://svn.lv0.org/ lv0/
 
 Copyright (c) 2007-2012 lv0 developers.
-$Id: $
+$Id$
 
