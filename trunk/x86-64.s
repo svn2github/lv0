@@ -256,21 +256,19 @@ pixel:
         movq    %rsi, %r12      # move second argument y
         movq    %rdx, %r13      # move third argument color
         # calculate offset = ((y * x-resolution) + x) * (bpp / 8 )
+        xorq    %rax, %rax      # zero rax
+        movb    vesa_mode+25, %al # move bits per pixel
+        movq    $0x08, %rbx     # set divisor to 8 
+        xorq    %rdx, %rdx      # zero rdx
+        divq    %rbx            # bits per pixel divided by divisor 
+        movq    %rax, %r14      # keep interim result bytes per pixel
         movq    %r12, %rax      # set y
         movw    vesa_mode+18, %rbx # set x-resolution
         xorq    %rdx, %rdx      # zero rdx
         mulq    %rbx            # multiply y with x-resolution
         addq    %r11, %rax      # add x 
-	#movq    %rax, %rcx      # keep result
-	#xorq    %rax, %rax      # zero rax
-        #movb    vesa_mode+25, %ah # move bits per pixel
-        #movq    $0x08, %rbx     # set divisor to 8 
-        #xorq    %rdx, %rdx      # zero rdx
-        #divq    %rbx            # bits per pixel divided by divisor 
         xorq    %rdx, %rdx      # zero rdx
-        #mulq    %rcx            # multiply with kept result 
-        movq    $0x03, %rbx
-        mulq    %rbx 
+        mulq    %r14            # multiply with kept result 
         movq    vesa_mode+40, %rdi # move linear frame buffer address
         addq    %rax, %rdi      # add calculated offset
         movq    %r13, %rax      # set color

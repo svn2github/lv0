@@ -34,7 +34,12 @@ print(const char *string) {
 
 void 
 main(void) {
+    unsigned short x=200, i;
     pixel(5, 5, 0xff0000);
     pixel(10, 10, 0x0000ff);
+    for (i = 0; i < 100; i++) {
+	/*x++;*/
+        pixel(x, 100, 0xff0000);
+    }
     print("lv0: Hello World!");
 }
