@@ -252,6 +252,15 @@ start64:
 # draw pixel to video
 pixel:
         enter   $0, $0          # handle base pointer and stack pointer
+        pushq   %rax            # preserve rax register on stack
+        pushq   %rbx            # preserve rbx register on stack
+        pushq   %rdx            # preserve rdx register on stack
+        pushq   %rdi            # preserve rdi register on stack
+        pushq   %rsi            # preserve rsi register on stack
+        pushq   %r11            # preserve r11 register on stack
+        pushq   %r12            # preserve r12 register on stack
+        pushq   %r13            # preserve r13 register on stack
+        pushq   %r14            # preserve r14 register on stack
         movq    %rdi, %r11      # move first argument x
         movq    %rsi, %r12      # move second argument y
         movq    %rdx, %r13      # move third argument color
@@ -273,6 +282,15 @@ pixel:
         addq    %rax, %rdi      # add calculated offset
         movq    %r13, %rax      # set color
         stosq                   # store pixel
+        popq    %r14            # restore r14 register from stack
+        popq    %r13            # restore r13 register from stack
+        popq    %r12            # restore r12 register from stack
+        popq    %r11            # restore r11 register from stack
+        popq    %rsi            # restore rsi register from stack
+        popq    %rdi            # restore rdi register from stack
+        popq    %rdx            # restore rdx register from stack
+        popq    %rbx            # restore rbx register from stack
+        popq    %rax            # restore rax register from stack
         leave                   # restore base pointer and stack pointer
         ret                     # return
 
