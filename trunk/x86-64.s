@@ -49,22 +49,27 @@ _start:
         lgdt    gdtr32          # load global descriptor table
         movl    %cr0, %eax      # get cr0
         orl     $1, %eax        # enable protected mode by setting lowest bit
-	movl    %eax, %cr0      # switch to protected mode
+        movl    %eax, %cr0      # switch to protected mode
         ljmp    $GDT_CODE32, $start32  # start protected mode at gdt offset
 
 # initialize serial port
 serial:
         enter   $0, $0          # handle base pointer and stack pointer
-	movb    $0, %ah         # serial port initialization
+        pushw   %ax             # preserve ax register on stack
+        pushw   %dx             # preserve ax register on stack
+        movb    $0, %ah         # serial port initialization
         movb    $0xe3, %al      # 11100011b means 9600 baud 8N1
         movw    $0, %dx         # serial port number 0
         int     $BIOS_SERIAL    # call bios serial port function
+        popw    %dx             # restore dx register from stack
+        popw    %ax             # restore ax register from stack
         leave                   # restore base pointer and stack pointer
         ret                     # return
 
 # enable a20 gate
 a20:
         enter   $0, $0          # handle base pointer and stack pointer
+        pushw   %ax             # preserve ax register on stack
         call    wait_keyboard   # wait for keyboard controller
         movb    $0xd1, %al      # set write command
         outb    %al, $0x64      # send command to controller
@@ -72,21 +77,28 @@ a20:
         movb    $0xdf, %al      # set enable a20 command
         outb    %al, $0x60      # send enable command to chip
         call    wait_keyboard   # wait for keyboard controller
+        popw    %ax             # restore ax register from stack
         leave                   # restore base pointer and stack pointer
         ret                     # return
 
 # wait for 8042 keyboard controller
 wait_keyboard:
         enter   $0, $0          # handle base pointer and stack pointer
+        pushw   %ax             # preserve ax register on stack
         inb     $0x64, %al      # get status from keyboard controller
         testb   $0x2, %al       # test if controller is busy
         jnz     wait_keyboard   # loop until controller is not busy
+        popw    %ax             # restore ax register from stack
         leave                   # restore base pointer and stack pointer
         ret                     # return
 
 # check cpuid for long mode
 cpuid:
         enter   $0, $0          # handle base pointer and stack pointer
+        pushl   %eax            # preserve eax register on stack
+        pushl   %ebx            # preserve ebx register on stack
+        pushl   %ecx            # preserve ecx register on stack
+        pushl   %edx            # preserve edx register on stack
         movl    $0x80000000, %eax # largest extended function number 
         cpuid                   # CPU identification
         cmpl    $0x80000001, %eax # check if 0x80000001 function is available
@@ -95,6 +107,10 @@ cpuid:
         cpuid                   # CPU identification
         btl     $29, %edx       # feature identifier long mode in edx bit 29 
         jnc     cpuid_error     # if not set there is no long mode
+        popl    %edx            # restore edx register from stack
+        popl    %ecx            # restore ecx register from stack
+        popl    %ebx            # restore ebx register from stack
+        popl    %eax            # restore eax register from stack
         leave                   # restore base pointer and stack pointer
         ret                     # return
 cpuid_error:
@@ -112,10 +128,16 @@ e820:
 # initialize vesa graphics mode
 vesa:
         enter   $0, $0          # handle base pointer and stack pointer
+        pushw   %ax             # preserve ax register on stack
+        pushw   %bx             # preserve bx register on stack
+        pushw   %cx             # preserve cx register on stack
+        pushw   %di             # preserve di register on stack
+        pushw   %es             # preserve es register on stack
         # get vesa mode information from bios
         movw    $vesa_mode, %di # set vesa mode information destination buffer 
         movw    $0x4f01, %ax    # set vesa mode information function number
         movw    $VESA_MODE, %cx # set vesa mode number
+# todo  #xorw    $0x4000, %bx    # set request linear frame buffer bit
         int     $BIOS_VIDEO     # call bios video function
         cmpw    $0x004f, %ax    # test if vesa call successful
         jne     vesa_error      # if not succesful no vesa 
@@ -126,6 +148,11 @@ vesa:
         int     $BIOS_VIDEO     # call bios video function
         cmpw    $0x004f, %ax    # test if vesa call successful
         jne     vesa_error      # if not succesful no vesa 
+        popw    %es             # restore es register from stack
+        popw    %di             # restore di register from stack
+        popw    %cx             # restore cx register from stack
+        popw    %bx             # restore bx register from stack
+        popw    %ax             # restore ax register from stack
         leave                   # restore base pointer and stack pointer
         ret                     # return
 vesa_error:
@@ -136,6 +163,9 @@ vesa_error:
 # print null terminated string to serial and video
 print:
         enter   $0, $0          # handle base pointer and stack pointer
+        pushw   %ax             # preserve ax register on stack
+        pushw   %bx             # preserve bx register on stack
+        pushw   %dx             # preserve dx register on stack
 print_character:
         lodsb                   # read character
         cmpb    $0, %al         # check if end of string reached
@@ -148,6 +178,9 @@ print_character:
         int     $BIOS_VIDEO     # call bios video function
         jmp     print_character # loop until end of string is reached
 print_done:
+        popw    %dx             # restore dx register from stack
+        popw    %bx             # restore bx register from stack
+        popw    %ax             # restore ax register from stack
         leave                   # restore base pointer and stack pointer
         ret                     # return
 
@@ -158,6 +191,7 @@ start32:
         movl    %eax, %ds       # setup the data segment
         movl    %eax, %es       # setup the extra segment
         movl    %eax, %ss       # setup the stack segment
+        xorl    %eax, %eax      # zero eax
         movl    %eax, %fs       # setup the additional extra segment
         movl    %eax, %gs       # setup the additional extra segment
         movl    $_start, %esp   # set stack pointer to 0x8000
@@ -185,6 +219,10 @@ start32:
 # setup PML4T and PDPT and PDT for identity mapped paging with 2MB page size
 pages:
         enter   $0, $0          # handle base pointer and stack pointer
+        pushl   %eax            # preserve eax register on stack
+        pushl   %ecx            # preserve ecx register on stack
+        pushl   %edi            # preserve edi register on stack
+        pushl   %esi            # preserve esi register on stack
         # zero 2 * 4KB of memory for PML4T and PDPT
         xorl    %eax, %eax      # zero eax
         movl    $PML4T, %edi    # set destination to PML4T 
@@ -235,14 +273,19 @@ pages_pdte:
         decl    %ecx            # decrement count
         cmpl    $0, %ecx        # check if done
         jne     pages_pdte      # loop if not done required
+        popl    %esi            # restore esi register from stack
+        popl    %edi            # restore edi register from stack
+        popl    %ecx            # restore ecx register from stack
+        popl    %eax            # restore eax register from stack
         leave                   # restore base pointer and stack pointer
         ret                     # return
 
 # long mode
 .code64
 start64:
-        # todo: setup clean env
         xorq    %rax, %rax      # zero rax
+        xorq    %rbx, %rbx      # zero rbx
+        xorq    %rcx, %rcx      # zero rcx
         movq    $_start, %rsp   # set stack pointer to 0x8000
                                 # stack grows downwards from 0x8000
         lgdt    gdtr64          # reload global descriptor table
