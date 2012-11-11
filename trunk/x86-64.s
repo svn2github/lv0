@@ -20,10 +20,12 @@
 .global pixel 
 
 .set BIOS_SERIAL, 0x14          # bios serial port interrupt
+.set BIOS_SYSTEM, 0x15          # bios miscellaneous system port interrupt
 .set BIOS_VIDEO, 0x10           # bios video services interrupt
 .set GDT_CODE32, 0x08           # offset gdt entry 32 bit code segment
 .set GDT_CODE64, 0x10           # offset gdt entry 64 bit code segment
 .set GDT_DATA, 0x18             # offset gdt entry data segment
+.set MEMORY, 0x3000             # memory bitmap build from e820
 .set PML4T, 0x1000              # page map level 4 table
 .set PDPT, 0x2000               # page directory pointer table
 .set PDT, 0x10000               # page directory table
@@ -42,8 +44,8 @@ _start:
         movw    $_start, %sp    # set stack pointer to 0x8000 growing downwards
         call    serial          # initialize serial port
         call    a20             # enable a20 gate
-        call    cpuid           # check cpuid for long mode
-        call    e820            # read memory map
+        call    cpu             # check cpuid for long mode
+        call    memory          # read memory map with e820
         call    vesa            # initialize vesa
         # switch to protected mode
         lgdt    gdtr32          # load global descriptor table
@@ -92,8 +94,8 @@ wait_keyboard:
         leave                   # restore base pointer and stack pointer
         ret                     # return
 
-# check cpuid for long mode
-cpuid:
+# check cpu id for long mode
+cpu:
         enter   $0, $0          # handle base pointer and stack pointer
         pushl   %eax            # preserve eax register on stack
         pushl   %ebx            # preserve ebx register on stack
@@ -102,28 +104,52 @@ cpuid:
         movl    $0x80000000, %eax # largest extended function number 
         cpuid                   # CPU identification
         cmpl    $0x80000001, %eax # check if 0x80000001 function is available
-        jb      cpuid_error     # if less no long mode can not be tested
+        jb      cpu_error       # if less no long mode can not be tested
         mov     $0x80000001, %eax # extended function number for features 
         cpuid                   # CPU identification
         btl     $29, %edx       # feature identifier long mode in edx bit 29 
-        jnc     cpuid_error     # if not set there is no long mode
+        jnc     cpu_error       # if not set there is no long mode
         popl    %edx            # restore edx register from stack
         popl    %ecx            # restore ecx register from stack
         popl    %ebx            # restore ebx register from stack
         popl    %eax            # restore eax register from stack
         leave                   # restore base pointer and stack pointer
         ret                     # return
-cpuid_error:
-        movl    $error_cpuid, %esi # set error cpuid message
+cpu_error:
+        movl    $error_cpu, %esi # set error cpu message
         call    print           # print message
         hlt                     # halt
 
 # read memory map via bios function e820
-e820:
+memory:
         enter   $0, $0          # handle base pointer and stack pointer
-        # todo
+        pushl   %eax            # preserve eax register on stack
+        pushl   %ebx            # preserve ebx register on stack
+        pushl   %ecx            # preserve ecx register on stack
+        pushl   %edx            # preserve edx register on stack
+        pushw   %di             # preserve di register on stack
+        pushw   %es             # preserve es register on stack
+        # get e820 memory map from bios
+        movw    $e820, %di      # set memory destination buffer 
+        xorl    %ebx, %ebx      # zero ebx
+memory_e820:
+        movl    $0x0820, %eax   # get system memory map function number
+        movl    $24, %ecx       # request 24 bytes
+        movl    $0x534d4150, %edx # set string SMAP
+        int     $BIOS_SYSTEM    # call bios system function
+        # todo check for error and set bits in memory map $MEMORY for entries found
+        popw    %es             # restore es register from stack
+        popw    %di             # restore di register from stack
+        popl    %edx            # restore edx register from stack
+        popl    %ecx            # restore ecx register from stack
+        popl    %ebx            # restore ebx register from stack
+        popl    %eax            # restore eax register from stack
         leave                   # restore base pointer and stack pointer
         ret                     # return
+memory_error:
+        movl    $error_memory, %esi # set error memory message
+        call    print           # print message
+        hlt                     # halt
 
 # initialize vesa graphics mode
 vesa:
@@ -354,9 +380,13 @@ gdt:    .word 0,0,0,0           # null segment
 #        .quad idt               # address interrupt descriptor table segments
 #idt:
 
+# e820 memory entry
+e820:      .space 24            # e820 memory entry buffer
+
 # vesa mode information
 vesa_mode: .space 256           # vesa mode buffer
 
 # ascii strings
-error_cpuid: .asciz "CPU ID error!\r\n"
+error_cpu: .asciz "CPU error!\r\n"
+error_memory: .asciz "Memory error!\r\n"
 error_vesa: .asciz "VESA error!\r\n"
