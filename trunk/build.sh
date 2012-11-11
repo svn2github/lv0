@@ -1,12 +1,12 @@
 #!/bin/sh
 
 as -o bootcd.o bootcd.s
-ld -N -Ttext 0x7c00 -S --oformat binary bootcd.o -o bootcd.bin
+ld -N -Ttext 0x7c00 -S --oformat binary -o bootcd.bin bootcd.o
 
 gcc -ffreestanding -nostdlib -nostartfiles -nodefaultlibs -nostdinc \
     -Os -ansi -pedantic -W -Wall -S -o kernel.s kernel.c
 as -o lv0.o x86-64.s kernel.s
-ld -N -Ttext 0x8000 -S --oformat binary lv0.o -o lv0.bin
+ld -N -Ttext 0x8000 -S --oformat binary -o lv0.bin lv0.o
 
 mkdir iso/
 cp bootcd.bin iso/
