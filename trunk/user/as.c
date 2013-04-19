@@ -15,7 +15,10 @@
  * OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
  */
-/* todo libc: (c)alloc, open, read, write, close, err(x), print(f), strcmp */
+/*
+ * todo syscall: (c)alloc, open, read, write, close, [at]exit
+ * todo libc: err(x), print(f), strcmp, memmov(e)
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <err.h>
@@ -25,8 +28,8 @@
 #define AS_YEAR "2013"
 
 typedef struct buf {
-    char *ptr;
-    size_t len, siz;
+    void *ptr;
+    size_t off, len, siz;
 } buf_t;
 
 typedef struct ctx {
@@ -34,12 +37,39 @@ typedef struct ctx {
     buf_t buf;
 } ctx_t;
 
-void ctx_setup(ctx_t, const char *, const char *);
-void ctx_pass(ctx_t);
-void ctx_free(ctx_t);
+static void buf_expand(buf_t *, size_t);
+static void buf_append(buf_t *, const void *, size_t);
+static char *buf_lined(buf_t *);
+static void buf_free(buf_t *)
+static void ctx_setup(ctx_t *, const char *, const char *);
+static void ctx_pass(ctx_t *);
+static void ctx_free(ctx_t *);
 
-void
-ctx_setup(ctx_t ctx, const char *src, const char *bin) {
+static void
+buf_expand(buf_t *buf, size_t siz) {
+    void *ptr;
+
+    if (SIZE_T_MAX - siz <= buf->siz)
+        errx(1, "buffer overflow");
+    /* buf_compact(buf); */
+    if (buf->len + siz <= buf->siz) /* todo: <= vs < */
+        return;
+    if (ptr = calloc(1, buf->siz + siz)) == NULL)
+        err(1, "calloc failed");
+    memmove(ptr, buf->ptr, buf->siz); 
+    buf->ptr = ptr;
+    buf->siz += siz;
+}
+
+static void
+buf_append(buf_t *buf, const void *ptr, size_t len) {
+    buf_expand(buf, len);
+    memmove((char *)buf->ptr + buf->len, ptr, len);
+    buf->len += len;
+}
+
+static void
+ctx_setup(ctx_t ctx *, const char *src, const char *bin) {
     if ((ctx->src = open(src, O_RDONLY)) == -1 ||
         (ctx->bin = open(bin, O_CREAT | O_WRONLY)) == -1)
         err(1, "open failed");
@@ -47,8 +77,8 @@ ctx_setup(ctx_t ctx, const char *src, const char *bin) {
         err(1, "calloc failed");
 }
 
-void 
-ctx_pass(ctx_t ctx) {
+static void 
+ctx_pass(ctx_t ctx *) {
     /* readline */
     /* lex tokens */
     /* parse */
@@ -56,8 +86,8 @@ ctx_pass(ctx_t ctx) {
         err(1, "write failed");
 }
 
-void
-ctx_free(ctx_t ctx) {
+static void
+ctx_free(ctx_t ctx *) {
     close(ctx->bin);
     close(ctx->src);
 }
