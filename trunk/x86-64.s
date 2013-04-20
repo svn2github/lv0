@@ -138,6 +138,7 @@ memory_e820:
         movl    $0x534d4150, %edx # set string SMAP
         int     $BIOS_SYSTEM    # call bios system function
         # todo check for error and set bits in memory map $MEMORY for entries found
+        # phlox, ibox and sartoris
         popw    %es             # restore es register from stack
         popw    %di             # restore di register from stack
         popl    %edx            # restore edx register from stack
