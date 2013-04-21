@@ -14,11 +14,7 @@
  * OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
  */
-/*
- * todo syscall: (c)alloc, free, open, read, write, close, [at]exit
- * todo lib: buf/BUF_SIZ, err(x), print(f), str(_)cmp, str(_)len, str_trim, 
- *           (mem)move, (mem)set(zero), (is)ascii, (is)space
- */
+/* todo lib: (str_)err(x) */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -31,96 +27,14 @@
 #define AS_VERSION "0.1a"
 #define AS_YEAR "2013"
 
-typedef struct buf {
-    void *ptr;
-    size_t off, len, siz;
-} buf_t;
-
 typedef struct ctx {
     int pass, src, bin;
     buf_t buf;
 } ctx_t;
 
-static char *str_trim(char *);
-static void buf_expand(buf_t *, size_t);
-static void buf_append(buf_t *, const void *, size_t);
-static char *buf_lined(buf_t *);
-static void buf_compact(buf_t *);
-static void buf_free(buf_t *)
 static void ctx_setup(ctx_t *, const char *, const char *);
 static void ctx_pass(ctx_t *);
 static void ctx_free(ctx_t *);
-
-static char *
-str_trim(char *str) {
-    char *end = str + strlen(str) - 1;
-
-    while (isspace(*str))
-        str++;
-    while (end > str && isspace(*end))
-        *end-- = '\0';
-    return str;
-}
-
-static void
-buf_expand(buf_t *buf, size_t siz) {
-    void *ptr;
-
-    if (SIZE_T_MAX - siz <= buf->siz) /* todo: may exit even if enough space available */
-        errx(1, "buffer overflow");
-    buf_compact(buf);
-    if (buf->len + siz <= buf->siz)
-        return;
-    if (ptr = calloc(1, buf->siz + siz)) == NULL)
-        err(1, "calloc failed");
-    memmove(ptr, buf->ptr, buf->siz); 
-    buf->ptr = ptr;
-    buf->siz += siz;
-}
-
-static void
-buf_append(buf_t *buf, const void *ptr, size_t len) {
-    buf_expand(buf, len);
-    memmove((char *)buf->ptr + buf->len, ptr, len);
-    buf->len += len;
-}
-
-static void
-buf_compact(buf_t *buf) {
-    if (buf->offset < BUFSIZ)
-        return;
-    memmove(buf->ptr, (char *)buf->ptr + buf->off, buf->len - buf->off);
-    buf->len -= buf->off;
-    buf->off = 0;
-    memset((char *)buf->ptr + buf->len, 0, buf->siz - buf->len);
-} 
-
-static char *
-buf_line(buf_t *buf) {
-    char c, *line = NULL;
-    size_t i;
-
-    for (i = buf->off; i < buf->len; i++) {
-        c = ((char *)buf->ptr)[i];
-        if (!isascii((int)c))
-            errx(1, "invalid character");
-        if (c == '\n') {
-            ((char *)buf->ptr)[i] = '\0';
-            line = &((char *)buf->ptr)[buf->off];
-            buf->off = i + 1;
-            break;
-        }
-    }
-    return line;
-}
-
-static void
-buf_free(buf_t *) {
-    if (buf == NULL)
-        return;
-    free(buf->ptr);
-    free(buf);
-}
 
 static void
 ctx_setup(ctx_t ctx *, const char *src, const char *bin) {
