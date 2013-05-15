@@ -14,9 +14,25 @@
  * OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
  */
+/*static char err_str [] = { 
+ *    "no such file or directory"  ENOFILE
+ *}
+ *
+ *void
+ *err(int no, const char *str) {
+ *    str_print("%s: %s\n", str, err_str[no]);
+ *   sys_exit(1);
+ *}
+ */
+
 int
 chr_ascii(unsigned char c) {
     return (c <= 127);
+}
+
+int
+char_space(unsigned char c) {
+    /* todo */
 }
 
 void
@@ -25,12 +41,22 @@ mem_set(void *ptr, size_t siz, unsigned char c) {
         *ptr = c;
 }
 
+void
+mem_mov(const void *src, void *dst, size_t siz) {
+    /* todo */
+}
+
 int
 str_cmp(const char *str_a, const char *str_b) {
     while (*str_a == *str_b++)
         if (*str_a++ == 0)
             return 0;
-    return (*(unsigned char *)str_a - *(unsigned char *)--str_b); /* todo: just return 1; ? */
+    return (*(unsigned char *)str_a - *(unsigned char *)--str_b);
+}
+
+int
+str_eq(const char *str_a, const char *str_b) {
+    return (str_cmp(str_a, str_b) == 0);
 }
 
 size_t
@@ -41,13 +67,18 @@ str_len(const char *str) {
     return len;
 }
 
+void
+str_print(const char *, ...) {
+    /* todo */
+}
+
 char *
 str_trim(char *str) {
     char *end = str + strlen(str) - 1;
 
-    while (isspace(*str))
+    while (chr_space(*str))
         str++;
-    while (end > str && isspace(*end))
+    while (end > str && chr_space(*end))
         *end-- = '\0';
     return str;
 }
@@ -63,7 +94,7 @@ buf_expand(buf_t *buf, size_t siz) {
         return;
     if (ptr = calloc(1, buf->siz + siz)) == NULL)
         err(1, "calloc failed");
-    memmove(ptr, buf->ptr, buf->siz); 
+    mem_mov(ptr, buf->ptr, buf->siz); 
     buf->ptr = ptr;
     buf->siz += siz;
 }
@@ -71,7 +102,7 @@ buf_expand(buf_t *buf, size_t siz) {
 void
 buf_append(buf_t *buf, const void *ptr, size_t len) {
     buf_expand(buf, len);
-    memmove((char *)buf->ptr + buf->len, ptr, len);
+    mem_mov((char *)buf->ptr + buf->len, ptr, len);
     buf->len += len;
 }
 
@@ -79,10 +110,10 @@ void
 buf_compact(buf_t *buf) {
     if (buf->offset < BUFSIZ)
         return;
-    memmove(buf->ptr, (char *)buf->ptr + buf->off, buf->len - buf->off);
+    mem_mov(buf->ptr, (char *)buf->ptr + buf->off, buf->len - buf->off);
     buf->len -= buf->off;
     buf->off = 0;
-    memset((char *)buf->ptr + buf->len, 0, buf->siz - buf->len);
+    mem_set((char *)buf->ptr + buf->len, 0, buf->siz - buf->len);
 } 
 
 char *
@@ -92,7 +123,7 @@ buf_line(buf_t *buf) {
 
     for (i = buf->off; i < buf->len; i++) {
         c = ((char *)buf->ptr)[i];
-        if (!isascii((int)c))
+        if (!chr_ascii(c))
             errx(1, "invalid character");
         if (c == '\n') {
             ((char *)buf->ptr)[i] = '\0';
@@ -112,3 +143,66 @@ buf_free(buf_t *) {
     free(buf);
 }
 
+void
+elm_link(elm_t *elm_a, elm_t *elm_b) {
+    if (elm_a != NULL)
+        elm_a->next = elm_b;
+    if (elm_b != NULL)
+        elm_b->prev = elm_a;
+}
+
+void
+elm_unlink(elm_t *elm) {
+    elm_link(elm->prev, elm->next);
+    elm->prev = NULL;
+    elm->next = NULL;
+}
+
+void
+lst_append(lst_t *lst, elm_t *elm) {
+    elm_link(lst->tail, elm);
+    if (lst->head == NULL)
+        lst->head = elm;
+    lst->tail = elm;
+    if (lst->len++ == SIZE_T_MAX)
+        errx(EX_SOFTWARE, "lst overflow");
+}
+
+elm_t *
+lst_head(lst_t *lst) {
+    return lst->head;
+}
+
+elm_t *
+lst_next(lst_t *lst) {
+    elm_t *elm = lst->next;
+
+    lst->next = (lst->next == NULL) ? lst->head : lst->next->next;
+    return elm;
+}
+
+size_t 
+lst_len(lst_t *lst) {
+    return lst->len;
+}
+
+void 
+lst_remove(lst_t *lst, elm_t *elm) {
+    if (elm == NULL)
+        return;
+    if (lst->head == elm)
+        lst->head = elm->next;
+    if (lst->tail == elm)
+        lst->tail = elm->prev;
+    elm_unlink(elm);
+    lst->len--;
+}
+
+void
+lst_free(lst_t *lst) {
+    if (lst == NULL)
+        return;
+    while(lst->head != NULL)
+        lst_remove(lst, lst->head);
+    free(lst);
+}

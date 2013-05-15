@@ -40,11 +40,12 @@ void mem_set(void *, size_t, unsigned char);
 void mem_mov(const void *, void *, size_t);
 void str_print(const char *, ...);
 int str_cmp(const char *, const char *);
+int str_eq(const char *, const char *);
 size_t str_len(const char *);
 char *str_trim(char *);
 void buf_expand(buf_t *, size_t);
 void buf_append(buf_t *, const void *, size_t);
-char *buf_lined(buf_t *);
+char *buf_line(buf_t *);
 void buf_compact(buf_t *);
 void buf_free(buf_t *)
 void elm_link(elm_t *);
