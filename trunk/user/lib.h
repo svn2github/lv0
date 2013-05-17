@@ -51,11 +51,10 @@ void buf_free(buf_t *)
 void elm_link(elm_t *);
 void elm_unlink(elm_t *);
 void lst_append(lst_t *, elm_t *);
-elm_t * lst_head(lst_t *);
-elm_t * lst_next(lst_t *);
-size_t lst_len(lst_t *);
 void lst_remove(lst_t *, elm_t *);
-void lst_free(lst_t *);
+void *lst_first(lst_t *);
+voif *lst_next(lst_t *);
+size_t lst_len(lst_t *);
 
 pid_t sys_fork(void);
 int sys_signal(pid_t, int);

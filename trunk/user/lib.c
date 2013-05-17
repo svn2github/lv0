@@ -92,7 +92,7 @@ buf_expand(buf_t *buf, size_t siz) {
     buf_compact(buf);
     if (buf->len + siz <= buf->siz)
         return;
-    if (ptr = calloc(1, buf->siz + siz)) == NULL)
+    if (!(ptr = calloc(1, buf->siz + siz)))
         err(1, "calloc failed");
     mem_mov(ptr, buf->ptr, buf->siz); 
     buf->ptr = ptr;
@@ -137,7 +137,7 @@ buf_line(buf_t *buf) {
 
 void
 buf_free(buf_t *) {
-    if (buf == NULL)
+    if (!buf)
         return;
     free(buf->ptr);
     free(buf);
@@ -145,9 +145,9 @@ buf_free(buf_t *) {
 
 void
 elm_link(elm_t *elm_a, elm_t *elm_b) {
-    if (elm_a != NULL)
+    if (elm_a)
         elm_a->next = elm_b;
-    if (elm_b != NULL)
+    if (elm_b)
         elm_b->prev = elm_a;
 }
 
@@ -160,35 +160,19 @@ elm_unlink(elm_t *elm) {
 
 void
 lst_append(lst_t *lst, elm_t *elm) {
+    if (!elm)
+        return;
     elm_link(lst->tail, elm);
-    if (lst->head == NULL)
+    if (!lst->head)
         lst->head = elm;
     lst->tail = elm;
     if (lst->len++ == SIZE_T_MAX)
         errx(EX_SOFTWARE, "lst overflow");
 }
 
-elm_t *
-lst_head(lst_t *lst) {
-    return lst->head;
-}
-
-elm_t *
-lst_next(lst_t *lst) {
-    elm_t *elm = lst->next;
-
-    lst->next = (lst->next == NULL) ? lst->head : lst->next->next;
-    return elm;
-}
-
-size_t 
-lst_len(lst_t *lst) {
-    return lst->len;
-}
-
 void 
 lst_remove(lst_t *lst, elm_t *elm) {
-    if (elm == NULL)
+    if (!elm)
         return;
     if (lst->head == elm)
         lst->head = elm->next;
@@ -198,11 +182,21 @@ lst_remove(lst_t *lst, elm_t *elm) {
     lst->len--;
 }
 
-void
-lst_free(lst_t *lst) {
-    if (lst == NULL)
-        return;
-    while(lst->head != NULL)
-        lst_remove(lst, lst->head);
-    free(lst);
+void *
+lst_first(lst_t *lst) {
+    return (lst->next = lst->head);
+}
+
+void *
+lst_next(lst_t *lst) {
+    elm_t *elm = lst->next;
+    
+    if (lst->next)
+        lst->next = lst->next->next;
+    return elm;
+}
+
+size_t 
+lst_len(lst_t *lst) {
+    return lst->len;
 }
