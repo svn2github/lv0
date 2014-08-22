@@ -1,4 +1,4 @@
-www.lv0.org
+= www.lv0.org =
         ...return to level zero
 
 They call us names:
@@ -17,7 +17,7 @@ Some of our features and goals:
 - no threads, just processes
 - no wide characters and only ASCII
 - own minimal boot loader
-- self-hosting using own compiler with support for a subset of ANSI C
+- self-hosting using own compiler
 - support for serial console
 - support only recent hardware (x86-64)
 - support high resolution vesa graphic modes
@@ -25,5 +25,5 @@ Some of our features and goals:
 Anonymous Subversion access:
 	# svn co svn://svn.lv0.org/ lv0/
 
-Copyright (c) 2007-2012 lv0 developers.
+Copyright (c) 2007-2014 lv0 developers.
 $Id$
